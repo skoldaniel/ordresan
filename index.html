@@ -154,6 +154,7 @@ const EL = O.elever || {}, IDS = Object.keys(EL);
 let who, my, st, picked=false, warn=[];
 function start(){
   const h = decodeURIComponent(location.hash.slice(1)).toLowerCase();
+  if(h==="larare") return renderTeacher();
   if(!IDS.length) return boot("alla");
   if(EL[h]) return boot(h);
   app.innerHTML = `<div class="center"><h1 style="font-size:40px;color:var(--acc)">Ordresan</h1>
@@ -163,16 +164,15 @@ function start(){
 }
 window.addEventListener("hashchange",()=>{picked=false;start()});
 
+const listFor = id => ((EL[id] && EL[id].resor) || O.resor.map(r=>r.id)).map(x=>{const r=O.resor.find(r=>r.id===x); if(!r) warn.push(`${EL[id]?EL[id].namn||id:id}: resan "${x}" finns inte (kolla elever.js).`); return r}).filter(Boolean);
+const stateFor = id => { const s={done:{},won:{},big:false,read:true}; try{Object.assign(s,JSON.parse(localStorage.getItem("ordresan:"+id)||"{}"))}catch(e){} return s };
+const saveFor = (id,s) => {try{localStorage.setItem("ordresan:"+id,JSON.stringify(s))}catch(e){}};
 function boot(id){
   who = id; warn = [];
-  const ids = (EL[id] && EL[id].resor) || O.resor.map(r=>r.id);
-  my = ids.map(x=>{const r=O.resor.find(r=>r.id===x); if(!r) warn.push(`Resan "${x}" finns inte (kolla elever.js).`); return r}).filter(Boolean);
-  my.forEach(check);
-  st = {done:{},won:{},big:false,read:true};
-  try{Object.assign(st,JSON.parse(localStorage.getItem("ordresan:"+who)||"{}"))}catch(e){}
+  my = listFor(id); st = stateFor(id);
   home();
 }
-const save = ()=>{try{localStorage.setItem("ordresan:"+who,JSON.stringify(st))}catch(e){}};
+const save = ()=>saveFor(who,st);
 function check(r){ // hittar ord som saknas i ord-listan
   const has = w => r.ord && r.ord[w];
   r.stopp.forEach((s,i)=>s.tasks.forEach(t=>[t.word,...(t.opts||[]),t.pic].filter(Boolean).forEach(w=>{if(!has(w))warn.push(`${r.titel}, stopp ${i+1}: ordet "${w}" saknas i ord.`)})));
@@ -182,21 +182,21 @@ function check(r){ // hittar ord som saknas i ord-listan
 let R; // resan som spelas just nu
 const ic = (w,px) => { const o = R.ord[w]; return o && o.bild ? `<span class="ic" style="width:${px}px;height:${px}px">${o.bild}</span>` : `<span class="ic txt" style="width:${px}px;height:${px}px">${esc(o?o.sv:w)}</span>` };
 const chunks = r => r.stopp.map((_,i)=>r.kod.slice(Math.round(i*r.kod.length/r.stopp.length),Math.round((i+1)*r.kod.length/r.stopp.length)));
-const doneN = r => st.done[r.id]||0;
+const doneN = (r,s=st) => s.done[r.id]||0;
 const unlocked = i => i===0 || !!st.won[my[i-1].id];
 const codeRow = r => { const c=chunks(r); return `<div class="code" aria-label="Kodordet">${c.map((ch,i)=>ch.split("").map(l=>`<span class="${i<doneN(r)?"on":""}">${i<doneN(r)?esc(l):""}</span>`).join("")).join("")}</div>` };
 const applyBig = ()=>document.documentElement.classList.toggle("big",!!st.big);
 
 /* framstegskod: en tecken per resa (0–9 = antal klara stopp, K = kodordet upplåst) + kontrollbokstav */
 const chk = c => String.fromCharCode(65+[...c].reduce((a,ch,i)=>a+ch.charCodeAt(0)*(i+3),0)%26);
-const exportCode = () => { const c = my.map(r=>st.won[r.id]?"K":String(Math.min(9,doneN(r)))).join(""); return c+"-"+chk(c) };
-function importCode(v){
+const exportCode = (list,s) => { const c = list.map(r=>s.won[r.id]?"K":String(Math.min(9,doneN(r,s)))).join(""); return c+"-"+chk(c) };
+function importCode(v,list,s){
   const m = v.toUpperCase().replace(/\s/g,"").match(/^([0-9K]+)-([A-Z])$/);
   if(!m || chk(m[1])!==m[2]) return false;
-  [...m[1]].forEach((ch,i)=>{const r=my[i]; if(!r) return;
-    if(ch==="K"){st.done[r.id]=r.stopp.length; st.won[r.id]=st.won[r.id]||"(inläst med kod)"}
-    else {st.done[r.id]=Math.min(+ch,r.stopp.length); delete st.won[r.id]}});
-  save(); return true;
+  [...m[1]].forEach((ch,i)=>{const r=list[i]; if(!r) return;
+    if(ch==="K"){s.done[r.id]=r.stopp.length; s.won[r.id]=s.won[r.id]||"(inläst med kod)"}
+    else {s.done[r.id]=Math.min(+ch,r.stopp.length); delete s.won[r.id]}});
+  return true;
 }
 
 /* ---------- start: gå direkt till aktuell resa ---------- */
@@ -218,19 +218,30 @@ function bindHeader(again){
   $("#tRead").onclick=()=>{st.read=!st.read;save();again()};
   if($("#tWho")) $("#tWho").onclick=()=>{picked=false;start()};
 }
-function teacher(){
-  return `<details class="note"><summary>För läraren</summary>
-    <p>Elev: <b>${esc(EL[who]?EL[who].namn||who:"alla")}</b>${IDS.length?` · egen länk: <code>#${esc(who)}</code>`:""}</p>
-    <p>Framstegskod: <span class="pc">${exportCode()}</span><br><span class="hint">Skriv in koden på en annan dator för att fortsätta där eleven var.</span></p>
-    <p><input id="imp" aria-label="Framstegskod" placeholder="t.ex. K3-B"> <button class="btn ghost" id="impB">Läs in kod</button> <span id="impM"></span></p>
-    <p>Kodord: ${my.map(r=>`${esc(r.titel)} = <b>${esc(r.kod)}</b>`).join(" · ")}</p>
-    ${warn.length?`<p class="warn">${warn.map(esc).join("<br>")}</p>`:""}
-    <p id="rs"><button class="btn ghost" id="reset">Börja om från början</button></p></details>`;
-}
-function bindTeacher(){
-  $("#impB").onclick=()=>{ if(importCode($("#imp").value)) home(); else $("#impM").innerHTML='<span class="warn">Koden stämmer inte.</span>' };
-  $("#reset").onclick=()=>{$("#rs").innerHTML=`Säker? <button class="btn" id="y">Ja, börja om</button> <button class="btn ghost" id="n">Nej</button>`;
-    $("#y").onclick=()=>{st.done={};st.won={};save();home()}; $("#n").onclick=home};
+/* ---------- lärarvyn: öppnas bara med #larare ---------- */
+function renderTeacher(){
+  warn=[]; const ids = IDS.length ? IDS : ["alla"];
+  const rows = ids.map(id=>{ const list=listFor(id), s=stateFor(id);
+    return `<div class="note" style="margin-top:12px"><h2 style="font-size:24px">${esc(EL[id]?EL[id].namn||id:"Alla elever")}</h2>
+      ${IDS.length?`<p style="margin:4px 0">Elevens länk: <code>${esc(location.href.split("#")[0])}#${esc(id)}</code></p>`:""}
+      <p style="margin:4px 0">${list.map(r=>`${esc(r.titel)}: ${s.won[r.id]?"<b>klar</b>":`${doneN(r,s)} av ${r.stopp.length} stopp`}`).join(" · ")}</p>
+      <p style="margin:4px 0">Framstegskod: <span class="pc">${exportCode(list,s)}</span></p>
+      <p style="margin:4px 0"><input data-imp="${esc(id)}" aria-label="Framstegskod" placeholder="t.ex. K3-B"> <button class="btn ghost" data-impb="${esc(id)}">Läs in kod</button>
+        <button class="btn ghost" data-rs="${esc(id)}">Börja om</button> <span data-m="${esc(id)}"></span></p></div>`}).join("");
+  app.innerHTML = `<header class="top"><h1>Ordresan<small>För läraren</small></h1></header>
+    <p class="hint">Framstegen sparas i webbläsaren på den här datorn. Öppna den här sidan på elevens dator för att se elevens framsteg.
+    Byter eleven dator: skriv av framstegskoden här och läs in den på den nya datorn.</p>
+    ${rows}
+    <div class="note"><p style="margin:0">Kodord: ${O.resor.map(r=>`${esc(r.titel)} = <b>${esc(r.kod)}</b>`).join(" · ")}</p>
+    ${O.resor.forEach(check)||""}${warn.length?`<p class="warn">${[...new Set(warn)].map(esc).join("<br>")}</p>`:`<p class="hint" style="margin:6px 0 0">Inga fel hittades i resefilerna.</p>`}</div>`;
+  const m = id => app.querySelector(`[data-m="${CSS.escape(id)}"]`);
+  app.querySelectorAll("[data-impb]").forEach(b=>b.onclick=()=>{const id=b.dataset.impb, s=stateFor(id);
+    if(importCode(app.querySelector(`[data-imp="${CSS.escape(id)}"]`).value,listFor(id),s)){saveFor(id,s);renderTeacher()}
+    else m(id).innerHTML='<span class="warn">Koden stämmer inte.</span>'});
+  app.querySelectorAll("[data-rs]").forEach(b=>b.onclick=()=>{const id=b.dataset.rs;
+    m(id).innerHTML=`Säker? <button class="btn" data-y>Ja</button> <button class="btn ghost" data-n>Nej</button>`;
+    m(id).querySelector("[data-y]").onclick=()=>{const s=stateFor(id);s.done={};s.won={};saveFor(id,s);renderTeacher()};
+    m(id).querySelector("[data-n]").onclick=renderTeacher});
 }
 
 /* ---------- alla resor ---------- */
@@ -241,8 +252,8 @@ function renderTrips(){
     const won=!!st.won[r.id], open=unlocked(i);
     return `<button class="trip ${won?"won":i===cur?"now":""}" data-t="${i}" ${open?"":"disabled"}>
       <span class="n">${open?(won?STAR:i+1):LOCK}</span>
-      <span><b>${i+1}. ${esc(r.titel)}</b><small>${won?`Klar · kodord: ${esc(r.kod)}`:open?`${doneN(r)} av ${r.stopp.length} stopp klara`:"Låst – klara resan innan först"}</small></span></button>`}).join("")}</div>` + teacher();
-  bindHeader(renderTrips); bindTeacher();
+      <span><b>${i+1}. ${esc(r.titel)}</b><small>${won?`Klar · kodord: ${esc(r.kod)}`:open?`${doneN(r)} av ${r.stopp.length} stopp klara`:"Låst – klara resan innan först"}</small></span></button>`}).join("")}</div>`;
+  bindHeader(renderTrips);
   app.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>renderMap(+b.dataset.t));
 }
 
@@ -261,8 +272,8 @@ function renderMap(i){
       <rect x="16" y="44" width="88" height="46" rx="6" fill="#9a5b2c"/><path d="M16 50a44 26 0 0 1 88 0Z" fill="#b86f36" transform="${all?"rotate(-18 16 50)":""}"/>
       <rect x="16" y="56" width="88" height="7" fill="#6f3f1c"/><rect x="52" y="52" width="16" height="20" rx="3" fill="var(--gold)"/>
       ${all?'<circle cx="60" cy="30" r="16" fill="var(--gold)" opacity=".85"/>':""}</svg></div>
-  <div style="text-align:center;margin-top:10px">${all?`<button class="btn" id="fin">${st.won[R.id]?"Visa kodordet":"Öppna skattkistan"}</button>`:`<button class="btn" data-l="${n}">Starta stopp ${n+1}</button>`}</div>` + teacher();
-  bindHeader(()=>renderMap(i)); bindTeacher();
+  <div style="text-align:center;margin-top:10px">${all?`<button class="btn" id="fin">${st.won[R.id]?"Visa kodordet":"Öppna skattkistan"}</button>`:`<button class="btn" data-l="${n}">Starta stopp ${n+1}</button>`}</div>`;
+  bindHeader(()=>renderMap(i));
   app.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>startLevel(+b.dataset.l));
   if($("#fin")) $("#fin").onclick=renderFinal;
 }
@@ -386,7 +397,7 @@ function renderWin(){
     <rect x="16" y="44" width="88" height="46" rx="6" fill="#9a5b2c"/><rect x="16" y="56" width="88" height="7" fill="#6f3f1c"/>
     <path d="M16 44a44 26 0 0 1 88 0Z" fill="#b86f36" transform="rotate(-25 16 44)"/></svg>
     <h2 style="font-size:34px">Du klarade ${esc(R.titel)}!</h2><p style="margin:0">Ditt kodord är:</p>
-    <div class="win">${esc(R.kod)}</div><p class="hint" style="margin:0">Klar ${esc(st.won[R.id])} · Framstegskod ${exportCode()}</p>
+    <div class="win">${esc(R.kod)}</div><p class="hint" style="margin:0">Klar ${esc(st.won[R.id])}</p>
     <p style="margin:0;font-weight:700">Visa skärmen för din lärare. ${spk("Bra jobbat! Visa skärmen för din lärare.","sv")}</p>
     ${next?`<button class="btn" id="nx">Nästa resa: ${esc(next.titel)}</button>`:""}
     <button class="btn ghost" id="back">Alla resor</button></div>`;

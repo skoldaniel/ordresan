@@ -31,11 +31,12 @@ Elevens länk är densamma, och det eleven redan har klarat ligger kvar.
 
 ## Elever
 
-- Personlig länk: `https://DITTNAMN.github.io/ordresan/#e1` (länkordet ska skrivas med små bokstäver i `elever.js`).
+- Personlig länk: `https://DITTNAMN.github.io/ordresan/#e1` (länkordet ska skrivas med små bokstäver i `elever.js`, och får inte heta `larare`).
 - Utan `#…` väljer eleven sitt namn på startsidan.
-- Framstegen sparas i webbläsaren på den dator där eleven spelar. Byter eleven dator: öppna **För läraren** längst ner, skriv av **framstegskoden** och läs in den på den nya datorn.
+- **Lärarvyn** öppnas med `https://DITTNAMN.github.io/ordresan/#larare`. Eleverna ser den aldrig. Där finns varje elevs framsteg, kodorden, framstegskoden och knappen för att börja om. Den visar också fel i resefilerna.
+- Framstegen sparas i webbläsaren på den dator där eleven spelar. Öppna därför lärarvyn på elevens dator. Byter eleven dator: skriv av framstegskoden i lärarvyn och läs in den i lärarvyn på den nya datorn.
 - Sidan är offentlig. Skriv aldrig elevernas riktiga namn.
 
 ## Om något inte fungerar
 
-Spelet visar på skärmen vilken fil som har fel. Vanligast är ett glömt kommatecken eller citattecken. Under **För läraren** visas också ord som används i uppgifter men saknas i ordlistan.
+Spelet visar på skärmen vilken fil som har fel. Vanligast är ett glömt kommatecken eller citattecken. I lärarvyn (`#larare`) visas också ord som används i uppgifter men saknas i ordlistan.
