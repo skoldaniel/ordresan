@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ordresan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;600&display=swap">
+<style>
+/* VOICE: lugn, uppmuntrande, en sak i taget – för elever med dyslexi
+   IDEA: en skattkarta där varje stopp låser upp en bokstav i kodordet
+   PICTURE: slingrande stig med runda stopp och en kista längst ner
+   COLOUR and TYPE: varm sandgrund, djup petrol, solgul för bokstäver; Andika + Fredoka
+   LAYOUT: en kolumn, stora knappar, svarsrad längst ner som i Duolingo */
+:root{color-scheme:light dark;
+ --bg:light-dark(#fbf6ea,#14191d);--card:light-dark(#ffffff,#1e252b);--ink:light-dark(#1d2430,#ecebe5);
+ --soft:light-dark(#5a6270,#a9b0b8);--line:light-dark(#ddd5c3,#36404a);
+ --acc:light-dark(#1d6b74,#6cc3c9);--acc-ink:light-dark(#fff,#0d1a1c);--tint:light-dark(#e3efef,#1f3236);
+ --gold:light-dark(#f2b630,#f2c04e);--gold-ink:#3a2a00;
+ --good:light-dark(#2e7d4f,#7ccf9c);--good-bg:light-dark(#e2f3e8,#1c3326);
+ --bad:light-dark(#a8402f,#f19a86);--bad-bg:light-dark(#fbe7e1,#3a2420);
+ --d:"Fredoka","Trebuchet MS",sans-serif;--b:"Andika","Verdana",sans-serif;--fs:19px}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+:root.big{--fs:23px}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:var(--fs)/1.5 var(--b);overflow-x:clip;letter-spacing:.02em;word-spacing:.08em}
+button,input{font:inherit;color:inherit}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+h1,h2{font-family:var(--d);font-weight:600;margin:0;line-height:1.1;text-wrap:balance}
+.wrap{max-width:720px;margin:0 auto;padding:16px max(4vw,14px) 40px}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:6px}
+.top h1{font-size:34px;color:var(--acc)}.top small{display:block;font-family:var(--d);font-size:18px;color:var(--soft)}
+.tg{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:2px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;min-height:44px;cursor:pointer;font-family:var(--d);font-size:16px}
+.chip[aria-pressed=true]{border-color:var(--acc);background:var(--tint);color:var(--acc)}
+.btn{border:0;background:var(--acc);color:var(--acc-ink);border-radius:14px;padding:12px 26px;min-height:52px;cursor:pointer;font-family:var(--d);font-weight:600;font-size:20px;box-shadow:0 4px 0 color-mix(in srgb,var(--acc) 60%,#000)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--acc) 60%,#000)}
+.btn:disabled{opacity:.4;cursor:default;transform:none}
+.btn.ghost{background:transparent;color:var(--acc);box-shadow:none;border:2px solid var(--acc)}
+.spk{border:2px solid var(--line);background:var(--card);border-radius:50%;width:48px;height:48px;display:inline-grid;place-items:center;cursor:pointer;flex:none;color:var(--acc);vertical-align:middle}
+.spk svg{width:24px;height:24px}
+.spk.huge{width:96px;height:96px;border-width:3px}.spk.huge svg{width:48px;height:48px}
+.ic{display:inline-grid;place-items:center;color:var(--ink)}.ic svg{width:100%;height:100%}
+.ic.txt{font-family:var(--d);font-weight:600;font-size:22px;line-height:1.1;text-align:center}
+.code{display:flex;gap:8px;justify-content:center;margin:6px 0 18px;flex-wrap:wrap}
+.code span{width:52px;height:60px;border-radius:12px;border:3px dashed var(--line);display:grid;place-items:center;font-family:var(--d);font-size:32px;font-weight:600}
+.code span.on{border:0;background:var(--gold);color:var(--gold-ink);animation:pop .5s}
+@keyframes pop{0%{transform:scale(.3) rotate(-15deg)}70%{transform:scale(1.15)}100%{transform:none}}
+.map{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;padding:10px 0 8px}
+.map::before{content:"";position:absolute;top:30px;bottom:60px;left:50%;border-left:6px dotted var(--line);transform:translateX(-3px)}
+.stop{position:relative;display:flex;align-items:center;gap:14px;width:min(100%,440px)}
+.stop:nth-child(odd){transform:translateX(-18%)}.stop:nth-child(even){transform:translateX(18%);flex-direction:row-reverse;text-align:right}
+.dot{flex:none;width:84px;height:84px;border-radius:50%;cursor:pointer;display:grid;place-items:center;background:var(--card);border:4px solid var(--line);color:var(--soft);position:relative;z-index:1}
+.dot svg{width:40px;height:40px}
+.dot.done{background:var(--gold);border-color:var(--gold);color:var(--gold-ink);font-family:var(--d);font-size:34px;font-weight:600}
+.dot.now{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);box-shadow:0 0 0 8px color-mix(in srgb,var(--acc) 25%,transparent);animation:pulse 1.8s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 14px color-mix(in srgb,var(--acc) 10%,transparent)}}
+.dot:disabled{cursor:default}
+.stop b{display:block;font-family:var(--d);font-size:21px;line-height:1.15}.stop small{color:var(--soft);font-size:15px}
+.chest{width:120px;height:100px;position:relative;z-index:1}
+.trips{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.trip{display:flex;align-items:center;gap:14px;border:3px solid var(--line);background:var(--card);border-radius:18px;padding:12px 16px;text-align:left;cursor:pointer;width:100%}
+.trip:disabled{cursor:default;opacity:.55}.trip.now{border-color:var(--acc)}
+.trip .n{flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--tint);color:var(--acc);font-family:var(--d);font-size:24px;font-weight:600}
+.trip.won .n{background:var(--gold);color:var(--gold-ink)}.trip .n svg{width:26px;height:26px}
+.trip b{font-family:var(--d);font-size:22px;display:block}.trip small{color:var(--soft);font-size:16px}
+.note{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px 16px;font-size:16px;margin-top:22px}
+.note summary{cursor:pointer;font-family:var(--d);font-weight:600}
+.note code,.pc{font-size:17px;background:var(--tint);padding:2px 8px;border-radius:6px;font-weight:700;letter-spacing:.08em}
+.note input{border:2px solid var(--line);border-radius:10px;padding:8px 10px;width:10em;background:var(--bg);text-transform:uppercase}
+.warn{color:var(--bad)}
+.lhead{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.x{border:0;background:none;cursor:pointer;width:44px;height:44px;color:var(--soft)}.x svg{width:28px;height:28px}
+.bar{flex:1;height:18px;background:var(--line);border-radius:9px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--good);border-radius:9px;transition:width .4s}
+.instr{display:flex;align-items:center;gap:12px;font-family:var(--d);font-size:24px;font-weight:500;margin-bottom:18px}
+.stage{display:flex;flex-direction:column;align-items:center;gap:18px;min-height:340px;text-align:center}
+.pic{width:140px;height:140px;background:var(--card);border:2px solid var(--line);border-radius:24px;padding:14px;display:grid;place-items:center}
+.say{display:flex;align-items:center;gap:10px;justify-content:center;font-size:26px;font-weight:700;flex-wrap:wrap}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;width:100%}
+.opt{border:3px solid var(--line);background:var(--card);border-radius:18px;padding:14px;min-height:72px;cursor:pointer;font-size:26px;font-weight:700;display:grid;place-items:center;box-shadow:0 4px 0 var(--line)}
+.opt .ic{width:90px;height:90px}
+.opt[aria-pressed=true]{border-color:var(--acc);background:var(--tint);box-shadow:0 4px 0 var(--acc)}
+.opt.ok{border-color:var(--good);background:var(--good-bg)}.opt.no{border-color:var(--bad);background:var(--bad-bg)}
+.slots,.bank,.line{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.slot{width:54px;height:62px;border:0;border-bottom:4px solid var(--ink);background:none;font-size:32px;font-weight:700;cursor:pointer}
+.tile{border:3px solid var(--line);background:var(--card);border-radius:12px;min-width:54px;height:58px;padding:0 14px;font-size:26px;font-weight:700;cursor:pointer;box-shadow:0 4px 0 var(--line)}
+.tile:disabled{opacity:.2;cursor:default;box-shadow:none}
+.line{min-height:76px;width:100%;border-bottom:3px solid var(--line);padding-bottom:10px;align-items:flex-end}
+.write{font-size:34px;font-weight:700;text-align:center;letter-spacing:.12em;padding:10px;width:min(100%,360px);border:3px solid var(--line);border-radius:14px;background:var(--card)}
+.write:focus{border-color:var(--acc)}
+.hint{color:var(--soft);font-size:17px}
+.foot{position:sticky;bottom:0;margin:18px calc(-1*max(4vw,14px)) 0;padding:16px max(4vw,14px);background:var(--bg);border-top:3px solid var(--line);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.foot.ok{background:var(--good-bg);border-color:var(--good)}.foot.no{background:var(--bad-bg);border-color:var(--bad)}
+.fmsg{font-size:21px;font-weight:700}.foot.ok .fmsg{color:var(--good)}.foot.no .fmsg{color:var(--bad)}
+.fmsg span{display:block;font-weight:400;font-size:18px;color:var(--ink)}
+.foot .btn{margin-left:auto}
+.center{text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:20px}
+.big-l{font-family:var(--d);font-size:120px;line-height:1;min-width:170px;padding:0 20px;height:190px;border-radius:28px;background:var(--gold);color:var(--gold-ink);display:grid;place-items:center;animation:pop .7s}
+.win{font-family:var(--d);font-size:clamp(48px,14vw,84px);letter-spacing:.12em;color:var(--acc)}
+.who{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;width:100%;margin-top:10px}
+.who .btn{font-size:24px;min-height:72px}
+@media(max-width:520px){.stop:nth-child(n){transform:none}.dot{width:72px;height:72px}.opt .ic{width:70px;height:70px}.slot{width:44px}.code span{width:44px;height:54px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<script>
+/* Plats för resor och elever. Filerna elever.js, resor.js och resor/*.js fyller på den. */
+window.ORDRESAN = {resor:[], elever:{}, fel:[],
+  add(r){ this.resor.push(r) },
+  svg(inner){ return '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+inner+'</svg>' }};
+window.addEventListener("error", e => ORDRESAN.fel.push((e.filename||"").split("/").pop()+" rad "+e.lineno+": "+e.message));
+</script>
+<script src="elever.js"></script>
+<script src="resor.js"></script>
+</head>
+<body>
+<div class="wrap" id="app"><p class="center">Laddar …</p></div>
+<script>
+{
+const O = window.ORDRESAN, $ = (s,el=document)=>el.querySelector(s), app = $("#app");
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const shuffle = a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const mix = a=>{if(a.length<2)return a.slice();let r,n=0;do r=shuffle(a);while(r.join()===a.join()&&n++<20);return r};
+const SPK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
+const LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+const STAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .8-5.2 4.8 1.4 7L12 17.6 5.8 21l1.4-7L2 9.3l7-.8z"/></svg>';
+const XI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const msg = h => app.innerHTML = `<div class="center">${h}</div>`;
+
+/* ---------- uppläsning ---------- */
+const can = "speechSynthesis" in window; let vEn=null, vSv=null;
+const pickV = ()=>{const v=speechSynthesis.getVoices();vEn=v.find(x=>/en-GB/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||null;vSv=v.find(x=>/^sv/i.test(x.lang))||null};
+if(can){pickV();speechSynthesis.onvoiceschanged=pickV}
+function say(t,lang="en",queue=false){if(!can||!t)return;if(!queue)speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t),v=lang==="sv"?vSv:vEn;u.lang=v?v.lang:(lang==="sv"?"sv-SE":"en-GB");if(v)u.voice=v;u.rate=lang==="sv"?.95:.78;speechSynthesis.speak(u)}
+const spk = (t,lang="en",cls="")=>can?`<button type="button" class="spk ${cls}" data-say="${esc(t)}" data-lang="${lang}" aria-label="Lyssna">${SPK}</button>`:"";
+document.addEventListener("click",e=>{const b=e.target.closest("[data-say]");if(b)say(b.dataset.say,b.dataset.lang)});
+
+/* ---------- ladda resefilerna i tur och ordning ---------- */
+function load(src){return new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.body.appendChild(s)})}
+(async()=>{
+  const list = window.ORDRESAN_RESOR || [];
+  for(const f of list){
+    const before = O.resor.length;
+    try{ await load(f) }catch(e){ return msg(`<h2>Något gick fel</h2><p>Kunde inte hitta <b>${esc(f)}</b>.<br>Kolla att filen finns och att namnet i resor.js stämmer exakt.</p>`) }
+    if(O.resor.length===before) return msg(`<h2>Något gick fel</h2><p>Filen <b>${esc(f)}</b> har ett fel i koden.</p><p class="hint">${esc(O.fel.join(" · "))}</p>`);
+  }
+  if(!O.resor.length) return msg(`<h2>Inga resor än</h2><p>Lägg till resefiler i <b>resor.js</b>.</p>`);
+  start();
+})();
+
+/* ---------- vem spelar? ---------- */
+const EL = O.elever || {}, IDS = Object.keys(EL);
+let who, my, st, picked=false, warn=[];
+function start(){
+  const h = decodeURIComponent(location.hash.slice(1)).toLowerCase();
+  if(!IDS.length) return boot("alla");
+  if(EL[h]) return boot(h);
+  app.innerHTML = `<div class="center"><h1 style="font-size:40px;color:var(--acc)">Ordresan</h1>
+    <h2>Vem är du? ${spk("Vem är du? Klicka på ditt namn.","sv")}</h2>
+    <div class="who">${IDS.map(id=>`<button class="btn" data-w="${esc(id)}">${esc(EL[id].namn||id)}</button>`).join("")}</div></div>`;
+  app.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{picked=true;boot(b.dataset.w)});
+}
+window.addEventListener("hashchange",()=>{picked=false;start()});
+
+function boot(id){
+  who = id; warn = [];
+  const ids = (EL[id] && EL[id].resor) || O.resor.map(r=>r.id);
+  my = ids.map(x=>{const r=O.resor.find(r=>r.id===x); if(!r) warn.push(`Resan "${x}" finns inte (kolla elever.js).`); return r}).filter(Boolean);
+  my.forEach(check);
+  st = {done:{},won:{},big:false,read:true};
+  try{Object.assign(st,JSON.parse(localStorage.getItem("ordresan:"+who)||"{}"))}catch(e){}
+  home();
+}
+const save = ()=>{try{localStorage.setItem("ordresan:"+who,JSON.stringify(st))}catch(e){}};
+function check(r){ // hittar ord som saknas i ord-listan
+  const has = w => r.ord && r.ord[w];
+  r.stopp.forEach((s,i)=>s.tasks.forEach(t=>[t.word,...(t.opts||[]),t.pic].filter(Boolean).forEach(w=>{if(!has(w))warn.push(`${r.titel}, stopp ${i+1}: ordet "${w}" saknas i ord.`)})));
+}
+
+/* ---------- hjälpfunktioner ---------- */
+let R; // resan som spelas just nu
+const ic = (w,px) => { const o = R.ord[w]; return o && o.bild ? `<span class="ic" style="width:${px}px;height:${px}px">${o.bild}</span>` : `<span class="ic txt" style="width:${px}px;height:${px}px">${esc(o?o.sv:w)}</span>` };
+const chunks = r => r.stopp.map((_,i)=>r.kod.slice(Math.round(i*r.kod.length/r.stopp.length),Math.round((i+1)*r.kod.length/r.stopp.length)));
+const doneN = r => st.done[r.id]||0;
+const unlocked = i => i===0 || !!st.won[my[i-1].id];
+const codeRow = r => { const c=chunks(r); return `<div class="code" aria-label="Kodordet">${c.map((ch,i)=>ch.split("").map(l=>`<span class="${i<doneN(r)?"on":""}">${i<doneN(r)?esc(l):""}</span>`).join("")).join("")}</div>` };
+const applyBig = ()=>document.documentElement.classList.toggle("big",!!st.big);
+
+/* framstegskod: en tecken per resa (0–9 = antal klara stopp, K = kodordet upplåst) + kontrollbokstav */
+const chk = c => String.fromCharCode(65+[...c].reduce((a,ch,i)=>a+ch.charCodeAt(0)*(i+3),0)%26);
+const exportCode = () => { const c = my.map(r=>st.won[r.id]?"K":String(Math.min(9,doneN(r)))).join(""); return c+"-"+chk(c) };
+function importCode(v){
+  const m = v.toUpperCase().replace(/\s/g,"").match(/^([0-9K]+)-([A-Z])$/);
+  if(!m || chk(m[1])!==m[2]) return false;
+  [...m[1]].forEach((ch,i)=>{const r=my[i]; if(!r) return;
+    if(ch==="K"){st.done[r.id]=r.stopp.length; st.won[r.id]=st.won[r.id]||"(inläst med kod)"}
+    else {st.done[r.id]=Math.min(+ch,r.stopp.length); delete st.won[r.id]}});
+  save(); return true;
+}
+
+/* ---------- start: gå direkt till aktuell resa ---------- */
+function home(){
+  applyBig(); if(can) speechSynthesis.cancel();
+  const i = my.findIndex(r=>!st.won[r.id]);
+  i<0 ? renderTrips() : renderMap(i);
+}
+function header(sub){
+  return `<header class="top"><h1>Ordresan<small>${sub}</small></h1><div class="tg">
+    <button class="chip" id="tTrips">Alla resor</button>
+    <button class="chip" id="tBig" aria-pressed="${!!st.big}">Större text</button>
+    <button class="chip" id="tRead" aria-pressed="${!!st.read}">Läs upp</button>
+    ${picked?`<button class="chip" id="tWho">Byt elev</button>`:""}</div></header>`;
+}
+function bindHeader(again){
+  $("#tTrips").onclick=renderTrips;
+  $("#tBig").onclick=()=>{st.big=!st.big;save();applyBig();again()};
+  $("#tRead").onclick=()=>{st.read=!st.read;save();again()};
+  if($("#tWho")) $("#tWho").onclick=()=>{picked=false;start()};
+}
+function teacher(){
+  return `<details class="note"><summary>För läraren</summary>
+    <p>Elev: <b>${esc(EL[who]?EL[who].namn||who:"alla")}</b>${IDS.length?` · egen länk: <code>#${esc(who)}</code>`:""}</p>
+    <p>Framstegskod: <span class="pc">${exportCode()}</span><br><span class="hint">Skriv in koden på en annan dator för att fortsätta där eleven var.</span></p>
+    <p><input id="imp" aria-label="Framstegskod" placeholder="t.ex. K3-B"> <button class="btn ghost" id="impB">Läs in kod</button> <span id="impM"></span></p>
+    <p>Kodord: ${my.map(r=>`${esc(r.titel)} = <b>${esc(r.kod)}</b>`).join(" · ")}</p>
+    ${warn.length?`<p class="warn">${warn.map(esc).join("<br>")}</p>`:""}
+    <p id="rs"><button class="btn ghost" id="reset">Börja om från början</button></p></details>`;
+}
+function bindTeacher(){
+  $("#impB").onclick=()=>{ if(importCode($("#imp").value)) home(); else $("#impM").innerHTML='<span class="warn">Koden stämmer inte.</span>' };
+  $("#reset").onclick=()=>{$("#rs").innerHTML=`Säker? <button class="btn" id="y">Ja, börja om</button> <button class="btn ghost" id="n">Nej</button>`;
+    $("#y").onclick=()=>{st.done={};st.won={};save();home()}; $("#n").onclick=home};
+}
+
+/* ---------- alla resor ---------- */
+function renderTrips(){
+  if(can) speechSynthesis.cancel();
+  const cur = my.findIndex(r=>!st.won[r.id]);
+  app.innerHTML = header(cur<0?"Alla resor klara!":"Alla resor") + `<div class="trips">${my.map((r,i)=>{
+    const won=!!st.won[r.id], open=unlocked(i);
+    return `<button class="trip ${won?"won":i===cur?"now":""}" data-t="${i}" ${open?"":"disabled"}>
+      <span class="n">${open?(won?STAR:i+1):LOCK}</span>
+      <span><b>${i+1}. ${esc(r.titel)}</b><small>${won?`Klar · kodord: ${esc(r.kod)}`:open?`${doneN(r)} av ${r.stopp.length} stopp klara`:"Låst – klara resan innan först"}</small></span></button>`}).join("")}</div>` + teacher();
+  bindHeader(renderTrips); bindTeacher();
+  app.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>renderMap(+b.dataset.t));
+}
+
+/* ---------- kartan för en resa ---------- */
+let ri;
+function renderMap(i){
+  ri=i; R=my[i]; if(can) speechSynthesis.cancel();
+  const n=doneN(R), all=n>=R.stopp.length, c=chunks(R);
+  app.innerHTML = header(`Resa ${i+1}: ${esc(R.titel)}`) + `
+  <p style="margin:0 0 4px;text-align:center">Klara varje stopp. Då får du en bokstav. ${spk("Klara varje stopp. Då får du en bokstav. Till sist får du kodordet.","sv")}</p>
+  ${codeRow(R)}
+  <div class="map">${R.stopp.map((s,k)=>{const d=k<n,now=k===n;
+    return `<div class="stop"><button class="dot ${d?"done":now?"now":""}" data-l="${k}" ${d||now?"":"disabled"} aria-label="Stopp ${k+1}: ${esc(s.title)}">${d?esc(c[k]):now?STAR:LOCK}</button>
+    <div><b>${k+1}. ${esc(s.title)}</b><small>${esc(s.sv||"")}</small></div></div>`}).join("")}
+    <svg class="chest" viewBox="0 0 120 100" aria-hidden="true"><ellipse cx="60" cy="92" rx="48" ry="6" fill="var(--line)"/>
+      <rect x="16" y="44" width="88" height="46" rx="6" fill="#9a5b2c"/><path d="M16 50a44 26 0 0 1 88 0Z" fill="#b86f36" transform="${all?"rotate(-18 16 50)":""}"/>
+      <rect x="16" y="56" width="88" height="7" fill="#6f3f1c"/><rect x="52" y="52" width="16" height="20" rx="3" fill="var(--gold)"/>
+      ${all?'<circle cx="60" cy="30" r="16" fill="var(--gold)" opacity=".85"/>':""}</svg></div>
+  <div style="text-align:center;margin-top:10px">${all?`<button class="btn" id="fin">${st.won[R.id]?"Visa kodordet":"Öppna skattkistan"}</button>`:`<button class="btn" data-l="${n}">Starta stopp ${n+1}</button>`}</div>` + teacher();
+  bindHeader(()=>renderMap(i)); bindTeacher();
+  app.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>startLevel(+b.dataset.l));
+  if($("#fin")) $("#fin").onclick=renderFinal;
+}
+
+/* ---------- ett stopp ---------- */
+let queue, retried, solved, total, lvl;
+function startLevel(k){lvl=k;queue=R.stopp[k].tasks.map((t,j)=>({...t,k:j}));retried=new Set();solved=0;total=queue.length;nextTask()}
+const INSTR = {listen:"Lyssna. Klicka på rätt bild.",pick:"Vilket ord passar till bilden?",letters:"Bygg ordet. Klicka på bokstäverna i rätt ordning.",
+  sentence:"Bygg meningen på engelska.",answer:"Svara på frågan. Bygg svaret.",write:"Skriv ordet på engelska."};
+const strip = s => s.replace(/[.?!]$/,"");
+
+function nextTask(){
+  if(!queue.length) return levelDone();
+  const t=queue.shift(), ins=t.instr||INSTR[t.type]||"";
+  app.innerHTML=`<div class="lhead"><button class="x" id="quit" aria-label="Till kartan">${XI}</button><div class="bar"><i style="width:${solved/total*100}%"></i></div></div>
+  <div class="instr">${spk(ins,"sv")}<span>${esc(ins)}</span></div>
+  <div class="stage" id="stage"></div>
+  <div class="foot" id="foot"><div class="fmsg" id="fmsg"></div><button class="btn" id="go" disabled>Kolla</button></div>`;
+  $("#quit").onclick=()=>{document.onkeydown=null;renderMap(ri)};
+  if(st.read) say(ins,"sv");
+  const stage=$("#stage"), go=$("#go"), ready=v=>go.disabled=!v;
+  let checkFn=()=>false, correct="", almost=false;
+
+  if(t.type==="listen"||t.type==="pick"){
+    const opts=shuffle(t.opts); let sel=null; correct=t.word;
+    stage.innerHTML = t.type==="listen"
+      ? `${spk(t.word,"en","huge")}<div class="opts">${opts.map((o,j)=>`<button class="opt" data-o="${esc(o)}" aria-pressed="false" aria-label="Svar ${j+1}">${ic(o,90)}</button>`).join("")}</div>`
+      : `<div class="pic">${ic(t.word,110)}</div><div class="opts">${opts.map(o=>`<button class="opt" data-o="${esc(o)}" aria-pressed="false">${esc(o)}</button>`).join("")}</div>`;
+    if(t.type==="listen") say(t.word,"en",true);
+    stage.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{sel=b.dataset.o;stage.querySelectorAll(".opt").forEach(x=>x.setAttribute("aria-pressed",x===b));if(t.type==="pick")say(sel);ready(1)});
+    checkFn=()=>{stage.querySelectorAll(".opt").forEach(x=>{x.disabled=true;if(x.dataset.o===t.word)x.classList.add("ok");else if(x.dataset.o===sel)x.classList.add("no")});return sel===t.word};
+  }
+
+  if(t.type==="letters"){
+    const letters=t.word.split(""), tiles=mix(letters), pk=[]; correct=t.word;
+    stage.innerHTML=`<div class="pic">${ic(t.word,110)}</div><div class="say">${esc(R.ord[t.word]?R.ord[t.word].sv:"")} ${spk(t.word)}</div><div class="slots" id="sl"></div><div class="bank" id="bk"></div>`;
+    const draw=()=>{$("#sl").innerHTML=letters.map((_,j)=>`<button class="slot" data-s="${j}">${pk[j]!==undefined?esc(tiles[pk[j]]):""}</button>`).join("");
+      $("#bk").innerHTML=tiles.map((c,j)=>`<button class="tile" data-t="${j}" ${pk.includes(j)?"disabled":""}>${esc(c)}</button>`).join("");ready(pk.length===letters.length)};
+    draw();
+    stage.onclick=e=>{const a=e.target.closest("[data-t]"),s=e.target.closest("[data-s]");
+      if(a&&!a.disabled&&pk.length<letters.length){pk.push(+a.dataset.t);draw()}
+      if(s&&pk[+s.dataset.s]!==undefined){pk.splice(+s.dataset.s,1);draw()}};
+    checkFn=()=>{stage.onclick=null;return pk.map(j=>tiles[j]).join("")===t.word};
+  }
+
+  if(t.type==="sentence"||t.type==="answer"){
+    const words=strip(t.answer).split(" "), bank=mix([...words,...(t.extra||[]).map(strip)]), line=[], end=/[.?!]$/.test(t.answer)?t.answer.slice(-1):"";
+    correct=t.answer;
+    stage.innerHTML=`${t.pic?`<div class="pic">${ic(t.pic,110)}</div>`:""}
+      ${t.type==="sentence"?`<div class="say">${esc(t.sv)} ${spk(t.sv,"sv")}</div>`:`<div class="say">${esc(t.q)} ${spk(t.q)}</div>`}
+      <div class="line" id="ln"></div><div class="bank" id="bk"></div>`;
+    if(t.type==="answer") say(t.q,"en",true);
+    const draw=()=>{$("#ln").innerHTML=line.map((j,p)=>`<button class="tile" data-p="${p}">${esc(bank[j])}</button>`).join("")+(line.length?`<span style="font-size:30px;font-weight:700">${end}</span>`:"");
+      $("#bk").innerHTML=bank.map((w,j)=>`<button class="tile" data-k="${j}" ${line.includes(j)?"disabled":""}>${esc(w)}</button>`).join("");ready(line.length)};
+    draw();
+    stage.onclick=e=>{const a=e.target.closest("[data-k]"),p=e.target.closest("[data-p]");
+      if(a&&!a.disabled){line.push(+a.dataset.k);say(bank[+a.dataset.k]);draw()}
+      if(p){line.splice(+p.dataset.p,1);draw()}};
+    checkFn=()=>{stage.onclick=null;return line.map(j=>bank[j]).join(" ").toLowerCase()===words.join(" ").toLowerCase()};
+  }
+
+  if(t.type==="write"){
+    let hint=0; correct=t.word;
+    stage.innerHTML=`<div class="pic">${ic(t.word,110)}</div><div class="say">${esc(R.ord[t.word]?R.ord[t.word].sv:"")}</div>
+      <input class="write" id="inp" autocomplete="off" spellcheck="false" autocapitalize="off" aria-label="Skriv ordet">
+      <div class="hint">${t.word.length} bokstäver · <button class="chip" id="tip">Tips: nästa bokstav</button></div>`;
+    const inp=$("#inp"); inp.focus(); inp.oninput=()=>ready(inp.value.trim());
+    $("#tip").onclick=()=>{hint=Math.min(hint+1,t.word.length);inp.value=t.word.slice(0,hint);inp.focus();ready(1)};
+    checkFn=()=>{inp.readOnly=true;$("#tip").disabled=true;const v=inp.value.trim().toLowerCase();
+      if(v===t.word.toLowerCase()) return true;
+      if(t.word.length>=4&&lev(v,t.word.toLowerCase())<=1){almost=true;return true}
+      return false};
+  }
+
+  let phase="check";
+  go.onclick=()=>{
+    if(phase==="next") return nextTask();
+    const ok=checkFn(), foot=$("#foot"), fm=$("#fmsg");
+    foot.className="foot "+(ok?"ok":"no");
+    if(ok){solved++;fm.innerHTML=almost?`Nästan perfekt!<span>Så här stavas det: <b>${esc(correct)}</b></span>`:["Rätt!","Snyggt!","Bra jobbat!","Ja, precis!"][Math.floor(Math.random()*4)]}
+    else{fm.innerHTML=`Inte riktigt.<span>Rätt svar: <b>${esc(correct)}</b>${retried.has(t.k)?"":" · Vi tar den igen snart."}</span>`;
+      if(!retried.has(t.k)){retried.add(t.k);queue.push(t)}else solved++}
+    say(correct);
+    $(".bar i").style.width=solved/total*100+"%";
+    phase="next";go.textContent="Fortsätt";go.disabled=false;go.focus();
+  };
+  document.onkeydown=e=>{if(e.key==="Enter"&&!go.disabled){e.preventDefault();go.click()}};
+}
+function lev(a,b){const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++){d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+    if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1)} // omkastade bokstäver räknas som ett fel
+  return d[a.length][b.length]}
+
+function levelDone(){
+  document.onkeydown=null;
+  st.done[R.id]=Math.max(doneN(R),lvl+1); save();
+  const c=chunks(R)[lvl];
+  app.innerHTML=`<div class="center"><h2 style="font-size:36px">Stopp ${lvl+1} klart!</h2>
+    <p style="margin:0">Du hittade ${c.length>1?"bokstäverna":"bokstaven"}: ${spk("Du hittade en bokstav. Bra jobbat!","sv")}</p>
+    <div class="big-l">${esc(c)}</div>${codeRow(R)}
+    <button class="btn" id="back">Tillbaka till kartan</button></div>`;
+  say("Bra jobbat!","sv"); $("#back").onclick=()=>renderMap(ri); $("#back").focus();
+}
+
+/* ---------- slutet av en resa ---------- */
+function renderFinal(){
+  if(st.won[R.id]) return renderWin();
+  app.innerHTML=`<div class="center"><h2 style="font-size:36px">Du har alla bokstäver!</h2>
+    <p style="margin:0">Skriv kodordet. ${spk("Du har alla bokstäver. Skriv kodordet.","sv")}</p>${codeRow(R)}
+    <form id="f" class="center" style="padding:0"><input class="write" id="inp" autocomplete="off" spellcheck="false" aria-label="Kodordet">
+    <div class="fmsg" id="fm" style="min-height:30px"></div><button class="btn">Lås upp</button></form>
+    <button class="btn ghost" id="back">Tillbaka</button></div>`;
+  $("#inp").focus(); $("#back").onclick=()=>renderMap(ri);
+  $("#f").onsubmit=e=>{e.preventDefault();
+    if($("#inp").value.trim().toUpperCase()===R.kod.toUpperCase()){st.won[R.id]=new Date().toLocaleString("sv-SE",{dateStyle:"long",timeStyle:"short"});save();renderWin()}
+    else{$("#fm").style.color="var(--bad)";$("#fm").textContent="Titta på bokstäverna och försök igen."}};
+}
+function renderWin(){
+  const next = my[ri+1];
+  app.innerHTML=`<div class="center"><svg viewBox="0 0 120 100" width="180" aria-hidden="true"><circle cx="60" cy="36" r="30" fill="var(--gold)" opacity=".5"/>
+    <rect x="16" y="44" width="88" height="46" rx="6" fill="#9a5b2c"/><rect x="16" y="56" width="88" height="7" fill="#6f3f1c"/>
+    <path d="M16 44a44 26 0 0 1 88 0Z" fill="#b86f36" transform="rotate(-25 16 44)"/></svg>
+    <h2 style="font-size:34px">Du klarade ${esc(R.titel)}!</h2><p style="margin:0">Ditt kodord är:</p>
+    <div class="win">${esc(R.kod)}</div><p class="hint" style="margin:0">Klar ${esc(st.won[R.id])} · Framstegskod ${exportCode()}</p>
+    <p style="margin:0;font-weight:700">Visa skärmen för din lärare. ${spk("Bra jobbat! Visa skärmen för din lärare.","sv")}</p>
+    ${next?`<button class="btn" id="nx">Nästa resa: ${esc(next.titel)}</button>`:""}
+    <button class="btn ghost" id="back">Alla resor</button></div>`;
+  say("Bra jobbat! Visa skärmen för din lärare.","sv");
+  $("#back").onclick=renderTrips; if(next) $("#nx").onclick=()=>renderMap(ri+1);
+}
+}
+</script>
+</body>
+</html>
